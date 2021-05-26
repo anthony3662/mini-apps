@@ -1,0 +1,24 @@
+{
+  "name": "multi-step-checkout",
+  "version": "1.0.0",
+  "description": "A multipart form implementation in React.js and Express.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "react:dev": "npx babel client --out-dir public --presets @babel/preset-react --ignore=node_modules,public --source-maps inline --watch",
+    "react": "npx babel client --out-dir public --presets @babel/preset-react --ignore=node_modules,public --source-maps inline"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "express": "^4.17.1",
+    "react": "^16.10.1",
+    "react-dom": "^16.10.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.6.2",
+    "@babel/core": "^7.6.2",
+    "@babel/preset-react": "^7.0.0"
+  }
+}

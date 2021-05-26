@@ -1,0 +1,47 @@
+td {
+  font-size: 125px;
+  text-align: center;
+  height: 160px;
+  width: 160px;
+}
+
+.wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+#one {
+  border-right: 2px solid black;
+  border-bottom: 2px solid black;
+}
+
+#two {
+  border-bottom: 2px solid black;
+}
+
+#three {
+  border-left: 2px solid black;
+  border-bottom: 2px solid black;
+}
+
+#four {
+  border-right: 2px solid black;
+}
+
+#six {
+  border-left: 2px solid black;
+}
+
+#seven {
+  border-right: 2px solid black;
+  border-top: 2px solid black;
+}
+
+#eight {
+  border-top: 2px solid black;
+}
+
+#nine {
+  border-left: 2px solid black;
+  border-top: 2px solid black;
+}

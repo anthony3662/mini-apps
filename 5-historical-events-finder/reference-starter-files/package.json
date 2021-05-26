@@ -1,0 +1,35 @@
+{
+  "name": "5-historical-events-finder",
+  "version": "1.0.0",
+  "description": "Mini Apps I - Historical Events Finder",
+  "main": "/client/index.jsx",
+  "scripts": {
+    "build-dev": "webpack --mode production",
+    "start": "json-server --watch ./data/db.json",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackreactor/hrnyc32-mini-apps.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/hackreactor/hrnyc32-mini-apps/issues"
+  },
+  "homepage": "https://github.com/hackreactor/hrnyc32-mini-apps#readme",
+  "dependencies": {
+    "json-server": "^0.16.3",
+    "path": "^0.12.7",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-paginate": "^6.5.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.9",
+    "@babel/preset-env": "^7.12.7",
+    "@babel/preset-react": "^7.12.7",
+    "babel-loader": "^8.2.1",
+    "webpack": "^5.7.0",
+    "webpack-cli": "^4.2.0"
+  }
+}

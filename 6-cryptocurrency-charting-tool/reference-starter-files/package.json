@@ -1,0 +1,31 @@
+{
+  "name": "6-cryptocurrency-charting-tool",
+  "version": "1.0.0",
+  "description": "Mini Apps I 6 - Cryptocurrency Charting Tool",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "build-dev": "webpack -w --mode development"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hackreactor/hrnyc32-mini-apps/tree/boilerplate/5-historical-events-finder"
+  },
+  "author": "",
+  "dependencies": {
+    "chart.js": "^2.9.4",
+    "express": "^4.17.1",
+    "path": "^0.12.7",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.9",
+    "@babel/preset-env": "^7.12.7",
+    "@babel/preset-react": "^7.12.7",
+    "babel-loader": "^8.2.2",
+    "webpack": "^5.8.0",
+    "webpack-cli": "^4.2.0"
+  }
+}
