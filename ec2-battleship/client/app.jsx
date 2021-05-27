@@ -94,7 +94,9 @@ class App extends React.Component {
       placemode: true,
       currentlyPlacing: 2,
       placingDirection: 'horizontal',
-      myTurn: false
+      myTurn: false,
+      opponentShipsSunk: 'Opponent Ships sunk: ',
+      winner: undefined
     };
   }
 
@@ -130,14 +132,22 @@ class App extends React.Component {
       }
     });
 
-    this.socket.on('send new board to client', (intendedTarget, board) => {
+    this.socket.on('send new board to client', (intendedTarget, board, sunkList) => {
       if (this.username === intendedTarget) {
-        this.receiveBoard(board);
+        this.receiveBoard(board, sunkList);
       }
+    });
+    this.socket.on('declare winner', (winner) => {
+      this.setState({
+        winner: winner
+      });
     });
   }
 
   opponentHoverHandler(row, column) {
+    if (this.state.winner) {
+      return;
+    }
     if (!this.state.myTurn) {
       //wait your turn
       return;
@@ -154,6 +164,9 @@ class App extends React.Component {
   }
 
   opponentClickHandler(row, column) {
+    if (this.state.winner) {
+      return;
+    }
     if(!this.state.myTurn) {
       //wait your turn
       return;
@@ -196,11 +209,13 @@ class App extends React.Component {
     });
   }
 
-  receiveBoard(board) {
+  receiveBoard(board, sunkList) {
+    var newSunkMessage = 'Opponent Ships Sunk: ' + sunkList.join(' ');
     console.log('received new board from opponent');
     this.setState({
       opponent: board,
-      opponentDisplay: board
+      opponentDisplay: board,
+      opponentShipsSunk: newSunkMessage
     });
   }
 
@@ -286,11 +301,29 @@ class App extends React.Component {
       elements.push(<button id={'rotate'} onClick={this.rotatePiece}>Rotate Piece</button>)
     }
 
+    var turnMessage = this.state.myTurn ? 'Its your turn!' : 'Opponents Turn';
+    if (this.state.winner) {
+      turnMessage = 'Congrats to ' + this.state.winner + '!';
+    }
+
 
     return(
+    <div>
       <div>
         {elements}
       </div>
+      <div id="welcome">
+        <h2>Welcome to Battleship</h2>
+        {this.state.placemode &&
+        <p>The game will start once both <br /> players have placed their ships</p>
+        }
+        {!this.state.placemode &&
+        <h3>{turnMessage}</h3>
+        }
+        <h4>{this.state.opponentShipsSunk}</h4>
+      </div>
+
+    </div>
     );
   }
 }

@@ -3,3 +3,8 @@
   top: 365px;
   left: 120px;
 }
+#welcome {
+  position: absolute;
+  top: 0px;
+  left: 400px;
+}

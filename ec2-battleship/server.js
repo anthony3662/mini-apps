@@ -20,6 +20,34 @@ var boardFilter = function(board) {
   return board;
 };
 
+var shipsSunk = function(board) {
+  var results = [];
+  var searchBoard = function(q) {
+    for (var row = 0; row < board.length; row++) {
+      for (var column = 0; column < board[0].length; column++) {
+        if (board[row][column] === q) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  if (!searchBoard(2)) {
+    results.push('Destroyer');
+  }
+  if (!searchBoard(3)) {
+    results.push('Submarine');
+  }
+  if (!searchBoard(4)) {
+    results.push('Battleship');
+  }
+  if (!searchBoard(5)) {
+    results.push('Carrier');
+  }
+  return results;
+};
+
 io.on('connection', (socket) => {
   console.log('A user connected');
   socket.on('disconnect', () => {
@@ -58,9 +86,13 @@ io.on('connection', (socket) => {
   socket.on('send new board to server', (user, board, cb) => {
     console.log('Received updated board from ' + user);
     cb();
+    var sunkList = shipsSunk(board);
     board = boardFilter(board);
-    var intendedTarget = user === player1 ? player2 : player1;
-    io.emit('send new board to client', intendedTarget, board);
+    var intendedRecipient = user === player1 ? player2 : player1;
+    io.emit('send new board to client', intendedRecipient, board, sunkList);
+    if (sunkList.length === 4) {
+      io.emit('declare winner', intendedRecipient);
+    }
   });
 });
 
