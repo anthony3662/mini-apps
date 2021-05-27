@@ -4,6 +4,7 @@ class Space extends React.Component {
     super(props);
     this.mouseEnter = this.mouseEnter.bind(this);
     this.mouseClick = this.mouseClick.bind(this);
+
   }
 
   mouseEnter() {
@@ -11,12 +12,17 @@ class Space extends React.Component {
     //call app handler for placing ships
     if (this.props.player === 'player') {
       this.props.playerHoverHandler(this.props.row, this.props.column);
+    } else {
+      this.props.opponentHoverHandler(this.props.row, this.props.column);
     }
   }
+
 
   mouseClick() {
     if (this.props.player === 'player') {
       this.props.playerClickHandler(this.props.row, this.props.column);
+    } else {
+      this.props.opponentClickHandler(this.props.row, this.props.column);
     }
   }
 
@@ -31,7 +37,7 @@ class Space extends React.Component {
     if (this.props.player === 'player') {
       top += 400;
     }
-    const styles = {
+    var styles = {
       position: 'absolute',
       top: top,
       left: this.props.column * 35,

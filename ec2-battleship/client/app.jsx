@@ -7,6 +7,12 @@ class App extends React.Component {
     super(props);
 
     //bind methods here
+    this.sendAttack = this.sendAttack.bind(this);
+    this.sendBoard = this.sendBoard.bind(this);
+    this.receiveBoard = this.receiveBoard.bind(this);
+    this.receiveAttack = this.receiveAttack.bind(this);
+    this.opponentHoverHandler = this.opponentHoverHandler.bind(this);
+    this.opponentClickHandler = this.opponentClickHandler.bind(this);
     this.playerHoverHandler = this.playerHoverHandler.bind(this);
     this.playerClickHandler = this.playerClickHandler.bind(this);
     this.rotatePiece = this.rotatePiece.bind(this);
@@ -16,6 +22,7 @@ class App extends React.Component {
     //set reference tools here
     this.colorKeys = {
       0: '#d7d7d7',
+      1: '#ffcccc',
       2: '#006699',
       3: '#009900',
       4: '#9900cc',
@@ -23,15 +30,29 @@ class App extends React.Component {
       8: '#000000',
       9: '#ff0000'
     };
-    this.username;
+    this.username; //set in componentDidMount
+    this.socket;
     //
     this.state = {
+      //1 for attack highlight, only for display state purpose
       //2,3,4,5 represent ships
       //9 for hit, red marker
       //8 for miss, black marker
 
       //display state
       playerDisplay: [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      ],
+      opponentDisplay: [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -72,7 +93,8 @@ class App extends React.Component {
 
       placemode: true,
       currentlyPlacing: 2,
-      placingDirection: 'horizontal'
+      placingDirection: 'horizontal',
+      myTurn: false
     };
   }
 
@@ -84,13 +106,102 @@ class App extends React.Component {
   openConnection() {
     this.socket = io();
     this.socket.emit('ready to start', this.username, this.state.player, (response) => {
-      console.log(response);
+      //console.log(response);
     });
 
-    //will receive the username who gets the 1st ture
+    //will receive the username who gets the 1st turn
     this.socket.on('Game Ready', (userToStart) => {
-      console.log(userToStart);
-    })
+      if (this.username === userToStart) {
+        this.setState({
+          myTurn: true
+        });
+      }
+      console.log(userToStart + ' goes first');
+    });
+
+    this.socket.on('players online', (data) => {
+      console.log(data);
+    });
+
+    this.socket.on('send attack to client', (intendedTarget, row, column) => {
+      if (this.username === intendedTarget) {
+        this.receiveAttack(row, column);
+        //receive attack calls sendBoard for us, this prevents async issues
+      }
+    });
+
+    this.socket.on('send new board to client', (intendedTarget, board) => {
+      if (this.username === intendedTarget) {
+        this.receiveBoard(board);
+      }
+    });
+  }
+
+  opponentHoverHandler(row, column) {
+    if (!this.state.myTurn) {
+      //wait your turn
+      return;
+    }
+    if (this.state.opponent[row][column] !== 0) {
+      //no need to highlight if space already occupied
+      return;
+    }
+    var newDisplay = JSON.parse(JSON.stringify(this.state.opponent));
+    newDisplay[row][column] = 1;
+    this.setState({
+      opponentDisplay: newDisplay
+    });
+  }
+
+  opponentClickHandler(row, column) {
+    if(!this.state.myTurn) {
+      //wait your turn
+      return;
+    }
+    if (this.state.opponent[row][column] !== 0) {
+      return; //you've already attacked that space
+    }
+    this.sendAttack(row, column);
+  }
+
+  receiveAttack(row, column) {
+    console.log('received attack on ' + row + ' ' + column);
+    var newPlayerState = JSON.parse(JSON.stringify(this.state.player));
+    if (this.state.player[row][column] >= 2 && this.state.player[row][column] <= 5) {
+      newPlayerState[row][column] = 9;
+    } else {
+      newPlayerState[row][column] = 8;
+    }
+    this.setState({
+      player: newPlayerState,
+      playerDisplay: newPlayerState
+    }, this.sendBoard);
+  }
+
+  sendBoard() {
+    console.log('new player board sent to server');
+    this.socket.emit('send new board to server', this.username, this.state.player, (response) => {
+      this.setState({
+        myTurn: true
+      });
+    });
+  }
+
+  sendAttack(row, column) {
+    this.socket.emit('send attack to server', this.username, row, column, (response) => {
+      console.log('attack sent to ' + row + ' ' + column);
+      this.setState({
+        myTurn: false
+      });
+    });
+  }
+
+  receiveBoard(board) {
+    console.log('received new board from opponent');
+    this.setState({
+      opponent: board,
+      opponentDisplay: board
+    });
   }
 
   playerHoverHandler(row, column) {
@@ -165,15 +276,16 @@ class App extends React.Component {
       for (var column = 0; column < this.state.opponent[0].length; column++) {
         var colorKeyPlayer = this.state.playerDisplay[row][column];
         var colorPlayer = this.colorKeys[colorKeyPlayer];
-        var colorKeyOpponent = this.state.opponent[row][column];
+        var colorKeyOpponent = this.state.opponentDisplay[row][column];
         var colorOpponent = this.colorKeys[colorKeyOpponent];
         elements.push(<Space row={row} column={column} player={'player'} colorKey={colorKeyPlayer} color={colorPlayer} playerHoverHandler={this.playerHoverHandler} playerClickHandler={this.playerClickHandler}/>);
-        elements.push(<Space row={row} column={column} player={'opponent'} colorKey={colorKeyOpponent} color={colorOpponent}/>);
+        elements.push(<Space row={row} column={column} player={'opponent'} colorKey={colorKeyOpponent} color={colorOpponent} opponentHoverHandler={this.opponentHoverHandler} opponentClickHandler={this.opponentClickHandler}/>);
       }
     }
     if (this.state.placemode) {
       elements.push(<button id={'rotate'} onClick={this.rotatePiece}>Rotate Piece</button>)
     }
+
 
     return(
       <div>
