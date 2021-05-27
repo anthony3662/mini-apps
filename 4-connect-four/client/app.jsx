@@ -66,6 +66,9 @@ class App extends React.Component {
       })
       .catch((err) => {
         console.log('oops');
+        this.setState({
+          scoreboard: 'Scoreboard: No server connection'
+        });
       });
   }
 
@@ -83,8 +86,13 @@ class App extends React.Component {
         });
         alert(colorString + ' wins!')
       })
+      //need to make sure game still works offline!
       .catch((err) => {
         console.log('darn');
+        alert(colorString + ' wins!')
+        this.setState({
+          gameOver: true
+        });
       })
   }
 
