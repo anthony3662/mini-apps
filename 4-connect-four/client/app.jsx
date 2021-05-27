@@ -71,7 +71,8 @@ class App extends React.Component {
 
   sendResultAndUpdate(colorString) {
     return axios.post('http://localhost:3000/scores', {
-      winner: colorString
+      winner: colorString,
+      time: new Date().getTime()
     })
       .then(() => {
         return this.getHistory();
@@ -80,7 +81,7 @@ class App extends React.Component {
         this.setState({
           gameOver: true
         });
-        alert(colorString + 'wins!')
+        alert(colorString + ' wins!')
       })
       .catch((err) => {
         console.log('darn');
@@ -180,7 +181,7 @@ class App extends React.Component {
     }
 
     if(this.state.turnCount === 42) {
-      alert('tie');
+      this.sendResultAndUpdate('tie');
     }
   }
 
