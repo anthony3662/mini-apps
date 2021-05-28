@@ -46,7 +46,7 @@ class App extends React.Component {
   }
 
   clear() {
-    return axios.delete('http://localhost:3000/scores')
+    return axios.delete('./scores')
       .then(() => {
         return this.getHistory();
       })
@@ -56,7 +56,7 @@ class App extends React.Component {
   }
 
   getHistory() {
-    return axios.get('http://localhost:3000/scores')
+    return axios.get('./scores')
       .then((response) => {
         var newHistory = response.data.history.slice();
         this.setState({
@@ -73,7 +73,7 @@ class App extends React.Component {
   }
 
   sendResultAndUpdate(colorString) {
-    return axios.post('http://localhost:3000/scores', {
+    return axios.post('./scores', {
       winner: colorString,
       time: new Date().getTime()
     })
