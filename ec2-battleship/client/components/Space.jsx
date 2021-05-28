@@ -16,7 +16,7 @@ class Space extends React.Component {
       this.props.opponentHoverHandler(this.props.row, this.props.column);
     }
   }
-
+  //
 
   mouseClick() {
     if (this.props.player === 'player') {

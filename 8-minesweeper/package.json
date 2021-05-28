@@ -1,7 +1,7 @@
 {
-  "name": "battleship",
+  "name": "minesweeper",
   "version": "1.0.0",
-  "description": "Battleship Solution",
+  "description": "Minesweeper",
   "main": "server.js",
   "scripts": {
     "react-dev": "webpack --mode development --watch",
@@ -24,8 +24,6 @@
     "mongodb": "^3.6.6",
     "mongoose": "^5.10.15",
     "react": "^16.2.0",
-    "react-dom": "^16.2.0",
-    "socket.io": "^4.1.2",
-    "socket.io-client": "^4.1.2"
+    "react-dom": "^16.2.0"
   }
 }
