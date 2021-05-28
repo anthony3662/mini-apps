@@ -8,3 +8,11 @@
   top: 0px;
   left: 400px;
 }
+#scoreboard {
+  position: absolute;
+  top: 0px;
+  left: 950px;
+}
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}

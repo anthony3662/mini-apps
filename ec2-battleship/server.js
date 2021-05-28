@@ -1,3 +1,4 @@
+const mongoose = require('./database/index.js');
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
@@ -5,6 +6,7 @@ const io = require('socket.io')(http);
 const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname + "/public"));
+app.use(express.json());
 
 var player1 = undefined;
 var player2 = undefined;
@@ -49,7 +51,23 @@ var shipsSunk = function(board) {
 };
 
 io.on('connection', (socket) => {
+
+  var sendHistory = function() {
+    var history = [];
+    mongoose.find()
+    .then((records) => {
+      history = records.map(function(record) {
+        return record.text;
+      });
+      io.emit('sending history', history);
+    })
+    .catch((err) => {
+      console.log('darn');
+    });
+  };
+
   console.log('A user connected');
+  sendHistory();
   socket.on('disconnect', () => {
     console.log('A user disconnected');
     player1 = undefined;
@@ -91,10 +109,32 @@ io.on('connection', (socket) => {
     var intendedRecipient = user === player1 ? player2 : player1;
     io.emit('send new board to client', intendedRecipient, board, sunkList);
     if (sunkList.length === 4) {
-      io.emit('declare winner', intendedRecipient);
+      var winner = intendedRecipient;
+      var loser = user;
+      var time = new Date();
+      var stamp = time.toLocaleString();
+      var text = winner + ' beat ' + loser + '! ' + stamp;
+      var newRecord = {
+        text: text,
+        winner: winner,
+        time: time
+      };
+      mongoose.save(newRecord)
+      .then(() => {
+        io.emit('declare winner', intendedRecipient);
+        sendHistory();
+      })
+      .catch((err) => {
+        console.log('oops');
+      });
     }
   });
+
+
+
 });
+
+
 
 
 http.listen(port, () => {

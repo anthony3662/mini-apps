@@ -1,4 +1,5 @@
 import {io} from 'socket.io-client';
+import axios from 'axios';
 import React from 'react';
 import ReactDOM from 'react-dom'
 import Space from './components/Space.jsx';
@@ -95,18 +96,25 @@ class App extends React.Component {
       currentlyPlacing: 2,
       placingDirection: 'horizontal',
       myTurn: false,
+      waitingForOpponent: false,
       opponentShipsSunk: 'Opponent Ships sunk: ',
-      winner: undefined
+      winner: undefined,
+      history: []
     };
   }
 
   componentDidMount() {
     this.username = prompt('Please choose a username');
+    this.socket = io();
+    this.socket.on('sending history', (history) => {
+      this.setState({
+        history: history
+      });
+    });
   }
 
   //call once ships are placed
   openConnection() {
-    this.socket = io();
     this.socket.emit('ready to start', this.username, this.state.player, (response) => {
       //console.log(response);
     });
@@ -115,14 +123,23 @@ class App extends React.Component {
     this.socket.on('Game Ready', (userToStart) => {
       if (this.username === userToStart) {
         this.setState({
-          myTurn: true
+          myTurn: true,
+          waitingForOpponent: false
+        });
+      } else {
+        this.setState({
+          waitingForOpponent: false
         });
       }
       console.log(userToStart + ' goes first');
     });
 
     this.socket.on('players online', (data) => {
-      console.log(data);
+      if (data === 'first player connected') {
+        this.setState({
+          waitingForOpponent: true
+        });
+      }
     });
 
     this.socket.on('send attack to client', (intendedTarget, row, column) => {
@@ -302,12 +319,19 @@ class App extends React.Component {
     }
 
     var turnMessage = this.state.myTurn ? 'Its your turn!' : 'Opponents Turn';
+    if (this.state.waitingForOpponent) {
+      turnMessage = 'Waiting for opponent to place ships';
+    }
     if (this.state.winner) {
       turnMessage = 'Congrats to ' + this.state.winner + '!';
     }
 
+    var historyElements = [];
+    for (var y = 0; y < this.state.history.length; y++) {
+      historyElements.push(<p>{this.state.history[y]}</p>);
+    }
 
-    return(
+    return (
     <div>
       <div>
         {elements}
@@ -315,12 +339,18 @@ class App extends React.Component {
       <div id="welcome">
         <h2>Welcome to Battleship</h2>
         {this.state.placemode &&
-        <p>The game will start once both <br /> players have placed their ships</p>
+        <p>The game will start once both <br /> players have placed their ships. <br />Place your ships on the lower<br />grid. Attack your opponent on the <br /> upper grid.</p>
         }
         {!this.state.placemode &&
         <h3>{turnMessage}</h3>
         }
         <h4>{this.state.opponentShipsSunk}</h4>
+      </div>
+      <div id="scoreboard">
+        <h2>Game History</h2>
+        <div>
+          {historyElements}
+        </div>
       </div>
 
     </div>
