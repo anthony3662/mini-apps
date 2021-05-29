@@ -4,7 +4,9 @@ import Space from './components/Space.jsx';
 class App extends React.Component {
   constructor(props) {
     super(props);
-
+    this.makeEmptyBoard = this.makeEmptyBoard.bind(this);
+    this.checkBoard = this.checkBoard.bind(this);
+    this.handleFirstClick = this.handleFirstClick.bind(this);
     this.clickHandler = this.clickHandler.bind(this);
     this.rightClickHandler = this.rightClickHandler.bind(this);
     this.clickHandlerZero = this.clickHandlerZero.bind(this);
@@ -28,21 +30,70 @@ class App extends React.Component {
       ],
       mines: [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      ]
+      ],
+      firstClick: true,
+      mineCount: 10,
+      gameOutcome: undefined
+
     };
   }
 
+
+  //this starts a new game. keep in mind mine state is determined on the first click
+  //so you can't lose immediately
+  makeEmptyBoard(rowCount, columnCount, mineCount) {
+    var newBoard = [];
+    for (var i = 0; i < rowCount; i++) {
+      var newRow = new Array(columnCount).fill(9);
+      newBoard.push(newRow);
+    }
+    var newMines = JSON.parse(JSON.stringify(newBoard));
+    this.setState({
+      board: newBoard,
+      mines: newMines,
+      mineCount: mineCount,
+      gameOutcome: undefined,
+      firstClick: true
+    });
+  }
+
+  checkBoard() {
+    var clicksToWin = this.state.board.length * this.state.board[0].length - this.state.mineCount;
+    var spacesCleared = 0;
+    for (var row = 0; row < this.state.board.length; row++) {
+      for (var column = 0; column < this.state.board[0].length; column++) {
+        var spaceStatus = this.state.board[row][column];
+        if (spaceStatus >= 0 && spaceStatus <= 8) {
+          spacesCleared += 1;
+        }
+        if (spaceStatus === -1) {
+          this.setState({
+            gameOutcome: 'lose'
+          });
+          return;
+        }
+      }
+    }
+    if (spacesCleared === clicksToWin) {
+      this.setState({
+        gameOutcome: 'win'
+      });
+    }
+  }
+
   rightClickHandler(row, column) {
-    console.log('asf');
+    if (this.state.gameOutcome) {
+      return;
+    }
     if(this.state.board[row][column] !== 9 && this.state.board[row][column] !== 10) {
       return;
     }
@@ -60,11 +111,54 @@ class App extends React.Component {
   }
 
   clickHandler(row, column) {
+    if (this.state.gameOutcome) {
+      return;
+    }
+    if (this.state.firstClick) {
+      this.handleFirstClick(row, column);
+      return;
+    }
     var memoboard = JSON.parse(JSON.stringify(this.state.board));
     this.clickHandlerZero(row, column, memoboard);
     this.setState({
       board: memoboard
-    });
+    }, this.checkBoard);
+  }
+
+  //generate mines on first move to ensure you can't lose on first click
+  handleFirstClick(row, column) {
+    var boardRowCount = this.state.board.length;
+    var numberOfSpaces = boardRowCount * this.state.board[0].length;
+    var shuffler = []; //create array 0 - 99
+    for (var i = 0; i < numberOfSpaces; i++) {
+      shuffler.push(i);
+    }
+    //ensures the 1st click cannot get a mine
+    var playerIndex = row * this.state.board[0].length + column;
+    shuffler.splice(playerIndex, 1);
+
+    //get an array of locations to place mines
+    shuffler.sort(() => Math.random() - 0.5);
+    var mineIndexes = shuffler.slice(0, this.state.mineCount)
+
+    //place mines
+    var memoMinefield = JSON.parse(JSON.stringify(this.state.mines));
+    for (var i = 0; i < mineIndexes.length; i++) {
+      var placeRow = Math.floor(mineIndexes[i] / this.state.board[0].length);
+      var placeCol = mineIndexes[i] % this.state.board[0].length;
+      memoMinefield[placeRow][placeCol] = 1;
+    }
+
+    //call clickHandler function after setting state
+    var cb = function() {
+      this.clickHandler(row, column);
+    }.bind(this);
+
+    this.setState({
+      mines: memoMinefield,
+      firstClick: false
+    }, cb);
+
   }
 
   clickHandlerZero(row, column, memoboard) {
@@ -157,9 +251,31 @@ class App extends React.Component {
         spaces.push(<Space row={row} column={column} number={this.state.board[row][column]} clickHandler={this.clickHandler} rightClick={this.rightClickHandler}/>);
       }
     }
+    var winMessage;
+    if(this.state.gameOutcome === 'win') {
+      winMessage = <h1>NICE!</h1>;
+    } else if (this.state.gameOutcome === 'lose') {
+      winMessage = <h1>BOOM BOOM GAME OVER</h1>;
+    }
     return (
       <div>
-        {spaces}
+        <div>
+          {spaces}
+        </div>
+        <div id={'welcome'}>
+          <h2>Minesweeper</h2>
+          <p>Click to Dig, Right Click to Flag</p>
+          <p>Clear all safe spaces to win!</p>
+          <div>
+            <h3>New Game</h3>
+            <button onClick={() =>{this.makeEmptyBoard(10, 10, 10)}}>Easy</button>
+            <button onClick={() =>{this.makeEmptyBoard(12, 15, 24)}}>Medium</button>
+            <button onClick={() =>{this.makeEmptyBoard(15, 20, 60)}}>Hard</button>
+          </div>
+          <div>
+            {winMessage}
+          </div>
+        </div>
       </div>
     );
   }
