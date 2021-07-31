@@ -31,6 +31,7 @@ class App extends React.Component {
       8: '#000000',
       9: '#ff0000'
     };
+    this.oneOrTwo;
     this.username; //set in componentDidMount
     this.socket;
     //
@@ -120,8 +121,8 @@ class App extends React.Component {
     });
 
     //will receive the username who gets the 1st turn
-    this.socket.on('Game Ready', (userToStart) => {
-      if (this.username === userToStart) {
+    this.socket.on('Game Ready', (playerToStart) => {
+      if (this.oneOrTwo === playerToStart) {
         this.setState({
           myTurn: true,
           waitingForOpponent: false
@@ -131,28 +132,30 @@ class App extends React.Component {
           waitingForOpponent: false
         });
       }
-      console.log(userToStart + ' goes first');
+      console.log('player ' + playerToStart + ' goes first');
     });
 
     this.socket.on('players online', (data) => {
-      if (data === 'first player connected') {
+      console.log(data);
+      if (data.slice(data.length - 22, data.length) === 'first player connected') {
+        this.oneOrTwo = 1;
         this.setState({
           waitingForOpponent: true
         });
       }
+      if (data.slice(data.length - 23, data.length) === 'second player connected') {
+        this.oneOrTwo = this.oneOrTwo ? 1 : 2;
+      }
+
     });
 
-    this.socket.on('send attack to client', (intendedTarget, row, column) => {
-      if (this.username === intendedTarget) {
-        this.receiveAttack(row, column);
-        //receive attack calls sendBoard for us, this prevents async issues
-      }
+    this.socket.on('send attack to client', (row, column) => {
+      this.receiveAttack(row, column);
+      //receive attack calls sendBoard for us, this prevents async issues
     });
 
-    this.socket.on('send new board to client', (intendedTarget, board, sunkList) => {
-      if (this.username === intendedTarget) {
-        this.receiveBoard(board, sunkList);
-      }
+    this.socket.on('send new board to client', (board, sunkList) => {
+      this.receiveBoard(board, sunkList);
     });
     this.socket.on('declare winner', (winner) => {
       this.setState({
@@ -210,7 +213,7 @@ class App extends React.Component {
 
   sendBoard() {
     console.log('new player board sent to server');
-    this.socket.emit('send new board to server', this.username, this.state.player, (response) => {
+    this.socket.emit('send new board to server', this.oneOrTwo, this.username, this.state.player, (response) => {
       this.setState({
         myTurn: true
       });
@@ -218,7 +221,7 @@ class App extends React.Component {
   }
 
   sendAttack(row, column) {
-    this.socket.emit('send attack to server', this.username, row, column, (response) => {
+    this.socket.emit('send attack to server', this.oneOrTwo, row, column, (response) => {
       console.log('attack sent to ' + row + ' ' + column);
       this.setState({
         myTurn: false

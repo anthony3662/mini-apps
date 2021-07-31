@@ -8,8 +8,9 @@ const port = process.env.PORT || 3000;
 app.use(express.static(__dirname + "/public"));
 app.use(express.json());
 
-var player1 = undefined;
-var player2 = undefined;
+var playerOnes = [];
+var playerTwos = [];
+var nextPairId = 0;
 
 var boardFilter = function(board) {
   for (var row = 0; row < board.length; row++) {
@@ -68,48 +69,49 @@ io.on('connection', (socket) => {
 
   console.log('A user connected');
   sendHistory();
+
+
   socket.on('disconnect', () => {
     console.log('A user disconnected');
-    player1 = undefined;
-    player2 = undefined;
   });
 
   socket.on('ready to start', (user, board, cb) => {
-    if (!player1) {
-      player1 = user;
+    socket.username = user;
+    socket.join('' + nextPairId);
+    if (!playerOnes[nextPairId]) {
+      playerOnes[nextPairId] = socket;
       cb();
-      io.emit('players online', 'first player connected');
-    } else if (!player2) {
-      player2 = user;
-      cb();
-      io.emit('players online', 'second player connected');
+      io.emit('players online', `Pair #${nextPairId} first player connected`);
     } else {
+      playerTwos[nextPairId] = socket;
       cb();
-      io.emit('players online', 'Server can only handle 2 players right now');
-
-    }
-    if (player2) {
-      var userToStart = Math.random() < 0.5 ? player1 : player2;
-      io.emit('Game Ready', userToStart);
+      io.emit('players online', `Pair #${nextPairId} second player connected`);
+      let playerToStart = Math.random() < 0.5 ? 1 : 2;
+      io.to('' + nextPairId).emit('Game Ready', playerToStart);
+      nextPairId += 1;
     }
   });
 
-  socket.on('send attack to server', (user, row, column, cb) =>{
-    console.log('Attack from ' + user + ' ' + row + ' ' + column);
+  socket.on('send attack to server', (oneOrTwo, row, column, cb) =>{
     cb();
-    var intendedTarget = user === player1 ? player2 : player1;
-    io.emit('send attack to client', intendedTarget, row, column);
+    let pairId = Array.from(socket.rooms).sort((a, b) => a.length - b.length)[0];
+    let pairIdInt = parseInt(pairId);
+    console.log('Pair Id ' + pairId + ' Attack from player ' + oneOrTwo + ' ' + row + ' ' + column);
+    socket.broadcast.to(pairId).emit('send attack to client', row, column);
   });
 
-  socket.on('send new board to server', (user, board, cb) => {
-    console.log('Received updated board from ' + user);
+  socket.on('send new board to server', (oneOrTwo, user, board, cb) => {
     cb();
-    var sunkList = shipsSunk(board);
+    let sunkList = shipsSunk(board);
     board = boardFilter(board);
-    var intendedRecipient = user === player1 ? player2 : player1;
-    io.emit('send new board to client', intendedRecipient, board, sunkList);
+    let pairId = Array.from(socket.rooms).sort((a, b) => a.length - b.length)[0];
+    let pairIdInt = parseInt(pairId);
+    console.log(`Pair #${pairId} Received updated board from player ${oneOrTwo}`);
+    console.log(typeof oneOrTwo);
+    let intendedTargetSocket = oneOrTwo === 1 ? playerTwos[pairIdInt] : playerOnes[pairIdInt];
+    socket.broadcast.to(pairId).emit('send new board to client', board, sunkList);
     if (sunkList.length === 4) {
-      var winner = intendedRecipient;
+      var winner = intendedTargetSocket.username;
       var loser = user;
       var time = new Date();
       var stamp = time.toLocaleString();
@@ -121,7 +123,7 @@ io.on('connection', (socket) => {
       };
       mongoose.save(newRecord)
       .then(() => {
-        io.emit('declare winner', intendedRecipient);
+        io.to(pairId).emit('declare winner', intendedTargetSocket.username);
         sendHistory();
       })
       .catch((err) => {
